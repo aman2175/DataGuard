@@ -1,20 +1,20 @@
 services:
   postgres:
     image: "postgres:16-alpine"
-    container_name: dataguard-postgres
+    container_name: ghdata-postgres
     environment:
-      POSTGRES_USER: dataguard
-      POSTGRES_PASSWORD: dataguard
-      POSTGRES_DB: dataguard
+      POSTGRES_USER: ghdata
+      POSTGRES_PASSWORD: ghdata
+      POSTGRES_DB: ghdata
     ports:
-      - "5433:5432"
+      - "5434:5432"
     volumes:
-      - dataguard_pg_data:/var/lib/postgresql/data
+      - ghdata_pg_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U dataguard -d dataguard"]
+      test: ["CMD-SHELL", "pg_isready -U ghdata -d ghdata"]
       interval: 5s
       timeout: 5s
       retries: 5
 
 volumes:
-  dataguard_pg_data:
+  ghdata_pg_data:
