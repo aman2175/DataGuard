@@ -16,5 +16,16 @@ services:
       timeout: 5s
       retries: 5
 
+  pgweb:
+    image: sosedoff/pgweb
+    container_name: ghdata-pgweb
+    ports:
+      - "8081:8081"
+    environment:
+      PGWEB_DATABASE_URL: postgres://ghdata:ghdata@postgres:5432/ghdata?sslmode=disable
+    depends_on:
+      postgres:
+        condition: service_healthy
+
 volumes:
   ghdata_pg_data:
