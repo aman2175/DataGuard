@@ -16,7 +16,7 @@ from dotenv import load_dotenv
 
 
 load_dotenv()# load the environment variables from the .env file
-RAW_FILE=Path("data/raw/2026-08-01-15.json.gz")
+RAW_FILE=Path("data/raw/2026-08-01-16.json.gz")
 BATCH_SIZE=1000
 
 
