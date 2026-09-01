@@ -1,5 +1,5 @@
 import os
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from dotenv import load_dotenv
 import psycopg2
 from pydantic import BaseModel
@@ -38,7 +38,7 @@ def top_repos(limit: int=10):
         conn.close()
 
 @app.get("/actors/top", response_model =list[ActorOut])
-def top_actors( limit: int=10):
+def top_actors(limit: int=10):
     conn=connect_to_db()
     try:
         with conn.cursor() as csr:
@@ -52,8 +52,30 @@ def top_actors( limit: int=10):
                 (limit,),
             )
             rows=csr.fetchall()
+           
             return [{"actor_login": log, "event_count":n} for log , n in rows]
 
     finally:
         conn.close()
 
+@app.get("/actors/", reposnse_model=ActorOut)
+def get_actor(login: str):
+    conn=connect_to_db()
+    try:
+        with conn.cursor() as csr:
+            csr.executr("""
+            SELECT actor_login, event_count
+            FROM actors
+            WHERE actor_login=%s
+            """,
+            (login,),
+
+            )
+            row=csr.fetchone()
+            if row is None:
+                raise HTTPException(status_code=404, detail="actor not found")
+            name, n =row
+            return {"actor_login": name , "event_count": n}
+
+    finally:
+    conn.close()
