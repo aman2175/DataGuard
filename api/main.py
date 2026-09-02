@@ -58,12 +58,12 @@ def top_actors(limit: int=10):
     finally:
         conn.close()
 
-@app.get("/actors/", reposnse_model=ActorOut)
+@app.get("/actors/{login}", response_model=ActorOut)
 def get_actor(login: str):
     conn=connect_to_db()
     try:
         with conn.cursor() as csr:
-            csr.executr("""
+            csr.execute("""
             SELECT actor_login, event_count
             FROM actors
             WHERE actor_login=%s
@@ -78,4 +78,26 @@ def get_actor(login: str):
             return {"actor_login": name , "event_count": n}
 
     finally:
-    conn.close()
+        conn.close()
+
+@app.get("/repo/{name}", response_model:RepoOut)
+def get_repo(repo_name:str):
+    conn=connect_to_db()
+    try:
+        with conn.cursor() as csr:
+            csr.execute(""""
+            SELECT repo_name, event_count
+            FROM repos
+            WHERE repo_name=%s
+            """,
+            (name,),
+        )
+        row=csr.fetchone()
+        if row is None:
+            raise HTTPException(status_code=404, detail="repo not found")
+        name, n= 
+        return {"repo_name": name, "event_count": n}
+    finally:
+        conn.close()
+
+
