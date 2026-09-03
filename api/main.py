@@ -3,6 +3,9 @@ from fastapi import FastAPI, HTTPException
 from dotenv import load_dotenv
 import psycopg2
 from pydantic import BaseModel
+from fastapi.responses import FileResponse
+from datetime import datetime, timedelta, timezone
+import jwt
 
 load_dotenv()
 
@@ -14,9 +17,14 @@ def connect_to_db():
 class RepoOut(BaseModel):
     repo_name: str
     event_count: int
+
 class ActorOut(BaseModel):
     actor_login: str
     event_count: int
+
+class LoginIn(BaseModel):
+    username: str
+    password: str
 
 @app.get("/repos/top",response_model =list[RepoOut] )
 def top_repos(limit: int=10):
@@ -80,24 +88,33 @@ def get_actor(login: str):
     finally:
         conn.close()
 
-@app.get("/repo/{name}", response_model:RepoOut)
-def get_repo(repo_name:str):
+@app.get("/repos/{name:path}", response_model=RepoOut)
+def get_repo(name: str):
     conn=connect_to_db()
     try:
         with conn.cursor() as csr:
-            csr.execute(""""
+            csr.execute("""
             SELECT repo_name, event_count
             FROM repos
             WHERE repo_name=%s
             """,
             (name,),
         )
-        row=csr.fetchone()
+            row=csr.fetchone()
         if row is None:
             raise HTTPException(status_code=404, detail="repo not found")
-        name, n= 
+        name, n= row
         return {"repo_name": name, "event_count": n}
     finally:
         conn.close()
 
 
+@app.post("/login")
+def login():
+    
+
+@app.get("/")
+def home():
+    return FileResponse("api/static/index.html")
+
+    
