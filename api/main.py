@@ -1,15 +1,17 @@
 import os
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends
 from dotenv import load_dotenv
 import psycopg2
 from pydantic import BaseModel
 from fastapi.responses import FileResponse
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials# beared --> look for authorization , Depends --> run this function before the next one
 from datetime import datetime, timedelta, timezone
 import jwt
 
 load_dotenv()
 
 app=FastAPI()
+bearer = HTTPBearer()#bearer --> is a test to check is its type is bearer? , if it passes , then it will return the credentials t
 
 def connect_to_db():
     return psycopg2.connect(os.environ["DATABASE_URL"])
@@ -25,9 +27,20 @@ class ActorOut(BaseModel):
 class LoginIn(BaseModel):
     username: str
     password: str
+# bearer is a test to check the type of of schema in the header and returns 2 things credentials and scheme type
+def get_current_user(cred: HTTPAuthorizationCredentials=Depends(bearer)):
+    try: 
+        payload=jwt.decode(
+            cred.credentials,
+            os.environ["JWT_SECRET"],
+            algorithms=["HS256"],
+        )
+    except jwt.PyJWTError:
+        raise HTTPException(status_code=401, detail="INVALD TOKEN OR TOKEN IS EXPIRED!")
+    return payload["sub"]
 
 @app.get("/repos/top",response_model =list[RepoOut] )
-def top_repos(limit: int=10):
+def top_repos(limit: int=10, user: str=Depends(get_current_user)):
     conn=connect_to_db()
     try:
         with conn.cursor() as csr:
@@ -46,7 +59,7 @@ def top_repos(limit: int=10):
         conn.close()
 
 @app.get("/actors/top", response_model =list[ActorOut])
-def top_actors(limit: int=10):
+def top_actors(limit: int=10, user: str=Depends(get_current_user)):
     conn=connect_to_db()
     try:
         with conn.cursor() as csr:
@@ -67,7 +80,7 @@ def top_actors(limit: int=10):
         conn.close()
 
 @app.get("/actors/{login}", response_model=ActorOut)
-def get_actor(login: str):
+def get_actor(login: str, user: str=Depends(get_current_user)):
     conn=connect_to_db()
     try:
         with conn.cursor() as csr:
@@ -89,7 +102,7 @@ def get_actor(login: str):
         conn.close()
 
 @app.get("/repos/{name:path}", response_model=RepoOut)
-def get_repo(name: str):
+def get_repo(name: str, user=Depends(get_current_user)):
     conn=connect_to_db()
     try:
         with conn.cursor() as csr:
@@ -108,10 +121,28 @@ def get_repo(name: str):
     finally:
         conn.close()
 
-
+"""
+Whole path
+They send username + password (body).
+You compare to .env.
+Wrong → 401.
+Right → stamp a pass that says who + expiry → return it. ------>>>>>>>>>
+"""
 @app.post("/login")
-def login():
-    
+def login(body:LoginIn):
+    user=os.environ["ADMIN_USER"]
+    password=os.environ["ADMIN_PASSWORD"]
+    if body.username!=user or body.password!=password:
+        raise HTTPException(status_code=401, detail="INVALID USERNAME OR PASSWORD!!!!!!!!!1")
+    token=jwt.encode(
+        {
+        "sub":body.username,
+        "exp":datetime.now(timezone.utc) + timedelta(minutes=15),
+        },
+    os.environ["JWT_SECRET"],
+    algorithm="HS256",
+    )
+    return {"token":token}
 
 @app.get("/")
 def home():
