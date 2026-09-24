@@ -27,6 +27,36 @@ class ActorOut(BaseModel):
 class LoginIn(BaseModel):
     username: str
     password: str
+
+class AskIn(BaseModel):
+    question: str
+KNOWN = {
+    "top repos": "SELECT repo_name, event_count FROM repos ORDER BY event_count DESC LIMIT 10",
+    "top actors": "SELECT actor_login, event_count FROM actors ORDER BY event_count DESC LIMIT 10",
+    "how many events": "SELECT COUNT(*) AS n FROM stg_events",
+}
+
+@app.post("/ask")
+def ask(body: AskIn, user: str=Depends(get_current_user)):
+    conn=connect_to_db()
+    q=body.question.strip().lower()
+    sql=KNOWN.get(q)
+    if sql is None:
+        raise HTTPException(status_code=400, detail="INVALID QUESTION")
+    try:
+        with conn.cursor() as crs:
+            crs.execute(sql)
+
+            return 
+
+
+    try:
+
+
+    finally:
+        conn.close()
+
+
 # bearer is a test to check the type of of schema in the header and returns 2 things credentials and scheme type
 def get_current_user(cred: HTTPAuthorizationCredentials=Depends(bearer)):
     try: 
