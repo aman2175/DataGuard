@@ -36,27 +36,6 @@ KNOWN = {
     "how many events": "SELECT COUNT(*) AS n FROM stg_events",
 }
 
-@app.post("/ask")
-def ask(body: AskIn, user: str=Depends(get_current_user)):
-    conn=connect_to_db()
-    q=body.question.strip().lower()
-    sql=KNOWN.get(q)
-    if sql is None:
-        raise HTTPException(status_code=400, detail="INVALID QUESTION")
-    try:
-        with conn.cursor() as crs:
-            crs.execute(sql)
-
-            return 
-
-
-    try:
-
-
-    finally:
-        conn.close()
-
-
 # bearer is a test to check the type of of schema in the header and returns 2 things credentials and scheme type
 def get_current_user(cred: HTTPAuthorizationCredentials=Depends(bearer)):
     try: 
@@ -68,6 +47,22 @@ def get_current_user(cred: HTTPAuthorizationCredentials=Depends(bearer)):
     except jwt.PyJWTError:
         raise HTTPException(status_code=401, detail="INVALD TOKEN OR TOKEN IS EXPIRED!")
     return payload["sub"]
+
+@app.post("/ask")
+def ask(body: AskIn, user: str=Depends(get_current_user)):
+    conn=connect_to_db()
+    q=body.question.strip().lower()
+    sql=KNOWN.get(q)
+    if sql is None:
+        raise HTTPException(status_code=400, detail="INVALID QUESTION")
+    try:
+        with conn.cursor() as crs:
+            crs.execute(sql)
+            cols=[d[0] for d in crs.description]
+            rows=[dict(zip(cols,row)) for row in crs.fetchall()]
+        return {"question": body.question, "sql": sql, "rows": rows}
+    finally:
+        conn.close()
 
 @app.get("/repos/top",response_model =list[RepoOut] )
 def top_repos(limit: int=10, user: str=Depends(get_current_user)):

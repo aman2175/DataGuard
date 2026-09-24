@@ -14,8 +14,21 @@
       <tr><th>Repo</th><th>Events</th></tr>
     </thead>
     <tbody id="rows"></tbody>
+
+  <input id="question" placeholder="question" />
+  <button id="ask">Ask</button>
+  <pre id="answer"></pre>
+  
   </table>
   <script>
+    document.getElementById("ask").onclick = function () {
+      fetch("/ask", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question: document.getElementById("question").value }),
+      })
+      .then((r) => r.json())
+      .then((data) => {
  document.getElementById("load").onclick = function () {
   fetch("/login", {
     method: "POST",
