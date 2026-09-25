@@ -2,6 +2,7 @@ import gzip
 import json
 import requests
 from pathlib import Path
+from datetime import datetime, timezone, timedelta
 
 RAW_DIR=Path("data/raw")
 
@@ -34,6 +35,11 @@ def inspect (path: Path) -> None:
     print(f"total lines: {c}")
 
 if __name__ == "__main__":
-    path=download_hour("2026-08-01", 16)
+    now=datetime.now(timezone.utc)-timedelta(hours=1)
+    hour=now.hour
+    date=now.strftime("%Y-%m-%d")
+    for i in RAW_DIR.glob("*.json.gz"):
+        i.unlink()
+    path=download_hour(date, hour)
     inspect(path)
 

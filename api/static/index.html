@@ -32,81 +32,90 @@
   </style>
 </head>
 <body>
-  <h1>Top repos</h1>
-  <input id="username" placeholder="username" />
-<input id="password" type="password" placeholder="password" />
-<button id="load">Load repos</button>
-  <table border="1">
-    <thead>
-      <tr><th>Repo</th><th>Events</th></tr>
-    </thead>
-    <tbody id="rows"></tbody>
+  <h1>GitHub activity</h1>
 
-  
-  </table>
+  <div id="login-box">
+    <p>Log in to see the busiest repos from this hour.</p>
+    <input id="username" placeholder="username" />
+    <input id="password" type="password" placeholder="password" />
+    <button id="login-btn">Log in</button>
+    <p id="login-error"></p>
+  </div>
 
-  <input id="question" placeholder="question" />
-  <button id="ask">Ask</button>
-  <pre id="answer"></pre>
+  <div id="app" style="display:none">
+    <h2>Top repos</h2>
+    <button id="load">Load repos</button>
+    <table>
+      <thead>
+        <tr><th>Repo</th><th>Events</th></tr>
+      </thead>
+      <tbody id="rows"></tbody>
+    </table>
+
+    <h2>Ask</h2>
+    <p>Try: top repos, top actors, or how many events.</p>
+    <input id="question" placeholder="top repos" />
+    <button id="ask">Ask</button>
+    <pre id="answer"></pre>
+  </div>
 
   <script>
- document.getElementById("load").onclick = function () {
-  fetch("/login", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      username: document.getElementById("username").value,
-      password: document.getElementById("password").value,
-    }),
-  })
-    .then((r) => r.json())
-    .then((login) => {
-      return fetch("/repos/top", {
-        headers: { Authorization: "Bearer " + login.token },
-      });
-    })
-    .then((r) => r.json())
-    .then((data) => {
-      const tbody = document.getElementById("rows");
-      tbody.innerHTML = ""; 
-      for (const item of data) {
-        const tr = document.createElement("tr");
-        tr.innerHTML =
-          "<td>" + item.repo_name + "</td><td>" + item.event_count + "</td>";
-        tbody.appendChild(tr);
-      }
-    });
-};
+    let token = "";
 
+    document.getElementById("login-btn").onclick = function () {
+      fetch("/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: document.getElementById("username").value,
+          password: document.getElementById("password").value,
+        }),
+      })
+        .then((r) => r.json())
+        .then((login) => {
+          if (!login.token) {
+            document.getElementById("login-error").textContent = "Wrong username or password.";
+            return;
+          }
+          token = login.token;
+          document.getElementById("login-box").style.display = "none";
+          document.getElementById("app").style.display = "block";
+        });
+    };
 
-document.getElementById("ask").onclick = function () {
-  fetch("/login", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      username: document.getElementById("username").value,
-      password: document.getElementById("password").value,
-    }),
-  })
-    .then((r) => r.json())
-    .then((login) => {
-      return fetch("/ask", {
+    document.getElementById("load").onclick = function () {
+      fetch("/repos/top", {
+        headers: { Authorization: "Bearer " + token },
+      })
+        .then((r) => r.json())
+        .then((data) => {
+          const tbody = document.getElementById("rows");
+          tbody.innerHTML = "";
+          for (const item of data) {
+            const tr = document.createElement("tr");
+            tr.innerHTML =
+              "<td>" + item.repo_name + "</td><td>" + item.event_count + "</td>";
+            tbody.appendChild(tr);
+          }
+        });
+    };
+
+    document.getElementById("ask").onclick = function () {
+      fetch("/ask", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: "Bearer " + login.token,
+          Authorization: "Bearer " + token,
         },
         body: JSON.stringify({
           question: document.getElementById("question").value,
         }),
-      });
-    })
-    .then((r) => r.json())
-    .then((data) => {
-      document.getElementById("answer").textContent = JSON.stringify(data, null, 2);
-    });
-};
-
+      })
+        .then((r) => r.json())
+        .then((data) => {
+          document.getElementById("answer").textContent = JSON.stringify(data, null, 2);
+        });
+    };
   </script>
 </body>
 </html>
