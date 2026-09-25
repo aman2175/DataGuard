@@ -15,20 +15,14 @@
     </thead>
     <tbody id="rows"></tbody>
 
+  
+  </table>
+
   <input id="question" placeholder="question" />
   <button id="ask">Ask</button>
   <pre id="answer"></pre>
-  
-  </table>
+
   <script>
-    document.getElementById("ask").onclick = function () {
-      fetch("/ask", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question: document.getElementById("question").value }),
-      })
-      .then((r) => r.json())
-      .then((data) => {
  document.getElementById("load").onclick = function () {
   fetch("/login", {
     method: "POST",
@@ -56,6 +50,36 @@
       }
     });
 };
+
+
+document.getElementById("ask").onclick = function () {
+  fetch("/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      username: document.getElementById("username").value,
+      password: document.getElementById("password").value,
+    }),
+  })
+    .then((r) => r.json())
+    .then((login) => {
+      return fetch("/ask", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: "Bearer " + login.token,
+        },
+        body: JSON.stringify({
+          question: document.getElementById("question").value,
+        }),
+      });
+    })
+    .then((r) => r.json())
+    .then((data) => {
+      document.getElementById("answer").textContent = JSON.stringify(data, null, 2);
+    });
+};
+
   </script>
 </body>
 </html>
