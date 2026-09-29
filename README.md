@@ -18,7 +18,8 @@ This is not a chat product. The question box only accepts those three phrases an
    - `sql/quality_checks.sql` checks row counts and null ids
 4. **API.** FastAPI in `api/main.py` serves the page and the data. `POST /login` checks the admin user in `.env` and returns a token that expires in 15 minutes. The data routes require that token.
 5. **Page.** `api/static/index.html` shows a login screen first. After login it shows the repo table and the question box.
-6. **Docker.** `docker-compose.yml` runs Postgres, a small database UI (pgweb), and the API. The API image is built from the `Dockerfile`.
+6. **Automatic reload.** `ingest/run_etl.py` runs when the API container starts, before the website. It downloads the previous finished UTC hour, empties `raw_data`, loads that file, then rebuilds `stg_events`, `actors`, `repos`, and the indexes. The page reads those rebuilt tables.
+7. **Docker.** `docker-compose.yml` runs Postgres, a small database UI (pgweb), and the API. The API image is built from the `Dockerfile`. The download inside Docker stays in the container. It does not replace `data/raw` on your Mac.
 
 ## What is not part of this project
 
@@ -38,30 +39,12 @@ Docker Desktop must be running.
 docker compose up -d --build
 ```
 
-Open `http://127.0.0.1:8000/`. Log in with `ADMIN_USER` and `ADMIN_PASSWORD` from `.env`.
+The first start takes several minutes. The container downloads the hour, loads it, and rebuilds the tables before the site accepts requests. Later starts do that again, so the tables follow the previous UTC hour.
 
-To refresh the hour and rebuild the tables, from the project folder with the virtualenv on:
-
-```bash
-source .venv/bin/activate
-python ingest/download.py
-python ingest/load.py
-docker compose exec -T postgres psql -U ghdata -d ghdata -c "TRUNCATE raw_data;"
-```
-
-Run the truncate **before** `load.py` if you want the database to contain only the new hour. Then rebuild the models:
-
-```bash
-docker compose exec -T postgres psql -U ghdata -d ghdata < sql/stg_events.sql
-docker compose exec -T postgres psql -U ghdata -d ghdata < sql/actors.sql
-docker compose exec -T postgres psql -U ghdata -d ghdata < sql/repos.sql
-docker compose exec -T postgres psql -U ghdata -d ghdata < sql/indexes.sql
-```
+Open `http://127.0.0.1:8000/`. Log in with `ADMIN_USER` and `ADMIN_PASSWORD` from `.env`, then click **Load repos**.
 
 Postgres on your Mac is port **5434**. Inside Docker the API uses host `postgres` and port **5432**. Do not commit `.env` or `data/`.
 
 ## Still to do
 
-- Run download, load, and the SQL rebuild automatically when the API container starts, instead of running those commands by hand.
-- Deploy the Docker image to a public host and load the hour into that host's database. A new hosted database starts empty.
-- Keep the README matched to the app when those two are done.
+Deploy the Docker image to a public host. A new hosted database starts empty until `run_etl.py` loads an hour into it. The local app is otherwise complete.
