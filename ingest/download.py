@@ -34,12 +34,20 @@ def inspect (path: Path) -> None:
             c+=1
     print(f"total lines: {c}")
 
+def latest_hour() -> Path:
+    now= datetime.now(timezone.utc)-timedelta(hours=1)
+    hour=now.hour
+    date=now.strftime("%Y-%m-%d")#format the date as YYYY-MM-DD
+    name=f"{date}-{hour}.json.gz"#create the filename
+    return RAW_DIR/name#return the filenamewhy 
+
 if __name__ == "__main__":
     now=datetime.now(timezone.utc)-timedelta(hours=1)
     hour=now.hour
     date=now.strftime("%Y-%m-%d")
     for i in RAW_DIR.glob("*.json.gz"):
         i.unlink()
+    
     path=download_hour(date, hour)
     inspect(path)
 

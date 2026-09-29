@@ -4,19 +4,20 @@ import json
 from pathlib import Path
 # import os for operating system related functions
 import os
-
 # import psycopg2 for database connection
 import psycopg2
 # import execute_values for bulk insert
 from psycopg2.extras import execute_values
 # import dotenv for environment variables
+
 from dotenv import load_dotenv
 
+from download import latest_hour
 
 
 
 load_dotenv()# load the environment variables from the .env file
-RAW_FILE=Path("data/raw/2026-08-01-16.json.gz")
+RAW_FILE=Path(latest_hour())
 BATCH_SIZE=1000
 
 
